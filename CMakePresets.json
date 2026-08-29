@@ -1,0 +1,176 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "MPAL_BUILD_MAIN": false
+      }
+    },
+    {
+      "name": "debug",
+      "displayName": "Main program (Debug)",
+      "description": "Build only MPAL and the main executable in Debug mode.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTING": false,
+        "MPAL_BUILD_BENCHMARKS": false,
+        "MPAL_BUILD_MAIN": true
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Main program (Release)",
+      "description": "Build only MPAL and the main executable in Release mode.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": false,
+        "MPAL_BUILD_BENCHMARKS": false,
+        "MPAL_BUILD_MAIN": true
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "Benchmark (Release)",
+      "description": "Build only MPAL and the Google Benchmark executable in Release mode.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": false,
+        "MPAL_BUILD_BENCHMARKS": true
+      }
+    },
+    {
+      "name": "test",
+      "displayName": "Tests (Debug)",
+      "description": "Build only MPAL and the GoogleTest executable in Debug mode.",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTING": true,
+        "MPAL_BUILD_BENCHMARKS": false
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "displayName": "Build main program (Debug)",
+      "configurePreset": "debug",
+      "targets": [
+        "main"
+      ],
+      "jobs": 0
+    },
+    {
+      "name": "release",
+      "displayName": "Build main program (Release)",
+      "configurePreset": "release",
+      "targets": [
+        "main"
+      ],
+      "jobs": 0
+    },
+    {
+      "name": "benchmark",
+      "displayName": "Build benchmarks",
+      "configurePreset": "benchmark",
+      "targets": [
+        "mpal_benchmarks"
+      ],
+      "jobs": 0
+    },
+    {
+      "name": "test",
+      "displayName": "Build tests",
+      "configurePreset": "test",
+      "targets": [
+        "mpal_tests"
+      ],
+      "jobs": 0
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "test",
+      "displayName": "Run tests",
+      "configurePreset": "test",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "debug",
+      "displayName": "Configure and build main program (Debug)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "debug"
+        },
+        {
+          "type": "build",
+          "name": "debug"
+        }
+      ]
+    },
+    {
+      "name": "release",
+      "displayName": "Configure and build main program (Release)",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "release"
+        },
+        {
+          "type": "build",
+          "name": "release"
+        }
+      ]
+    },
+    {
+      "name": "benchmark",
+      "displayName": "Configure and build benchmarks",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "benchmark"
+        },
+        {
+          "type": "build",
+          "name": "benchmark"
+        }
+      ]
+    },
+    {
+      "name": "test",
+      "displayName": "Configure, build, and run tests",
+      "steps": [
+        {
+          "type": "configure",
+          "name": "test"
+        },
+        {
+          "type": "build",
+          "name": "test"
+        },
+        {
+          "type": "test",
+          "name": "test"
+        }
+      ]
+    }
+  ]
+}

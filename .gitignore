@@ -1,0 +1,77 @@
+# Combined from github/gitignore C++.gitignore, CMake.gitignore and CUDA.gitignore.
+# https://github.com/github/gitignore
+
+# C/C++ prerequisites and object files
+*.d
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled headers
+*.gch
+*.pch
+
+# Linker and debugger files
+*.ilk
+*.pdb
+*.dwo
+
+# Dynamic libraries
+*.so
+*.so.*
+*.dylib
+*.dll
+
+# Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake generated files and directories
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+CMakeUserPresets.json
+cmake-build-*/
+
+# Common build directories
+/build/
+/out/
+Build/
+build-*/
+
+# CUDA generated files
+*.i
+*.ii
+*.gpu
+*.ptx
+*.cubin
+*.fatbin
+
+# Temporary files and caches
+*.tmp
+*.log
+*.bak
+*.swp
+.cache/
+
+/.claude/
+# Package managers
+vcpkg_installed/
+
+
