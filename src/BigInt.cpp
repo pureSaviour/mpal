@@ -1,5 +1,4 @@
 #include "BigInt.h"
-#include "utils.h"
 #include <cmath>
 #include <ctype.h>
 #include <string_view>
@@ -27,7 +26,7 @@ const mpal::BigInt mpal::BigInt::ZERO{0};
 const mpal::BigInt mpal::BigInt::ONE{1};
 mpal::BigInt::BigInt(const std::string &str)
 {
-    digits_ = std::move(StringToDigits(str, &isNegative_));
+    digits_ = std::move(string_to_digits(str, &isNegative_));
 }
 
 mpal::BigInt::BigInt(const BigInt &other)
@@ -43,9 +42,10 @@ mpal::BigInt::BigInt(BigInt &&other) noexcept
     other.isNegative_ = false;
 }
 
-std::string mpal::BigInt::ToString() const
+std::string mpal::BigInt::ToString(StringFormat format) const
 {
-    return DigitsToString(digits_, isNegative_, DEC);
+    std::vector<u32_t> digitsCopy = digits_;
+    return digits_to_string(digitsCopy, isNegative_, format);
 }
 
 bool mpal::BigInt::operator==(const BigInt &other) const
