@@ -3,6 +3,7 @@ add_executable(mpal_tests
     test_uint128.cpp
     test_int128.cpp
     test_int128_standalone.cpp
+    test_stream.cpp
 )
 
 target_include_directories(mpal_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)

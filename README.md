@@ -7,6 +7,8 @@ MPAL（Multi-Precision Arithmetic Library）是一个使用 C++23 开发的高�
 - `uint128_t`：无符号 128 位整数、算术、位运算、比较、字符串转换和边界处理。
 - `int128_t`：有符号 128 位整数，采用补码和模 2^128 回绕语义。
 - 公共 128 位除法内核：包含 128÷64、规范化 128÷128、二的幂快速路径和编译期回退。
+- 通用任意精度流式输入输出工具：提供可变长度和固定长度 limb 解析，以及与具体整数类型解耦的格式化输出能力。
+- 符合 C++ 格式化整数规则的 `uint128_t`、`int128_t` 流式输入输出。
 - `BigInt`：任意精度整数的基础实现，仍在持续完善。
 - GoogleTest 边界与随机差分测试。
 - Google Benchmark 微基准测试。
@@ -72,6 +74,43 @@ cmake --preset benchmark -DMPAL_USE_NATIVE_INT128=ON
 - 要在 GCC/Clang 上测试自定义后端，可配置 `-DMPAL_USE_NATIVE_INT128=OFF`。
 
 切换后端或编译器时应使用新的构建目录，或者重新运行对应 configure preset，避免复用另一套编译器生成的 CMake 缓存。
+
+## 流式输入输出
+
+`include/utils_stream.h` 提供与具体整数类型解耦的通用整数流工具。输入端可以将字符流解析为由 32 位 limb 组成的任意精度结果，并提供两种存储方式：
+
+- `read_integer(stream)`：使用可变长度存储，适合位宽不固定的任意精度整数。
+- `read_integer<CharT, Traits, N>(stream)`：使用包含 `N` 个 limb 的固定长度存储，同时报告溢出，适合 `uint128_t`、`int128_t` 等固定位宽整数。
+- `write_integer(...)`：统一处理符号、进制前缀、本地化数字分组、字段宽度、填充字符和对齐方式。
+
+`uint128_t` 和 `int128_t` 在这些工具之上实现了适用于窄字符流与宽字符流的模板化 `operator<<` 和 `operator>>`。其行为遵循 C++ 格式化整数输入输出的主要规则，包括：
+
+- 通过 `std::dec`、`std::oct`、`std::hex` 或 `std::setbase(0)` 决定输入进制；默认 `std::dec` 不会因为 `0` 或 `0x` 前缀自动切换进制，`std::setbase(0)` 才会启用前缀识别。
+- 支持 `std::showbase`、`std::showpos`、`std::uppercase`、`std::setw`、`std::setfill` 以及 `left`、`right`、`internal` 对齐。
+- 使用流的 locale 处理千位分隔与数字分组，并正确设置 `eofbit`、`failbit` 等流状态。
+- 对十进制输出保留有符号数的符号；非十进制输出按照标准整数流的方式展示 `int128_t` 的 128 位补码表示。
+
+示例：
+
+```cpp
+#include <iomanip>
+#include <sstream>
+#include "uint128.h"
+#include "int128.h"
+
+uint128_t value("340282366920938463463374607431768211455");
+
+std::ostringstream output;
+output << std::showbase << std::uppercase << std::hex << value;
+// output.str() == "0XFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+
+std::istringstream input("052 0x2a -42");
+uint128_t octal;
+uint128_t hexadecimal;
+int128_t signed_value;
+input >> std::setbase(0) >> octal >> hexadecimal >> signed_value;
+// octal == 42, hexadecimal == 42, signed_value == -42
+```
 
 ## Benchmark
 
@@ -170,6 +209,7 @@ MSVC 构建使用自定义 limb 后端；x64 除法会进入 `_udiv128` 优化�
 
 ```text
 include/       公开头文件和 128 位公共后端
+  utils_stream.h  通用任意精度整数流解析与格式化工具
 src/           MPAL 库实现
 tests/         GoogleTest 测试
 benchmarks/    Google Benchmark 基准

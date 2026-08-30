@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <span>
 
+#include "utils.h"
 #include "BigBase.h"
 
 namespace mpal{
@@ -29,7 +30,7 @@ public:
     ~BigInt()=default;    
     
     // friend std::ostream& operator<<(std::ostream& os, const BigInt& bigInt);
-    [[nodiscard]] std::string ToString() const;
+    [[nodiscard]] std::string ToString(StringFormat format = DEC) const;
     [[nodiscard]] bool operator ==(const BigInt& other) const;
     [[nodiscard]] bool operator <(const BigInt& other) const;
     [[nodiscard]] bool operator >(const BigInt& other) const;

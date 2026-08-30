@@ -11,6 +11,7 @@
 
 #include "integral_128.h"
 #include "utils.h"
+#include "utils_stream.h"
 
 namespace u128_impl{
     #if MPAL_HAS_NATIVE_I128
@@ -140,7 +141,7 @@ struct uint128_t {
             throw std::invalid_argument("Empty string is not a valid uint128_t");
         }
         bool isNegative = false;
-        std::vector<uint32_t> digits = StringToDigits(str, &isNegative);
+        std::vector<uint32_t> digits = string_to_digits(str, &isNegative);
         if(digits.size() <= 4){
             for(size_t i = 0; i < digits.size(); ++i){
                 v_ = u128_impl::add(u128_impl::shl(v_, 32), u128_impl::make(digits[i]));
@@ -307,7 +308,10 @@ struct uint128_t {
         return *this;
     }        
 
-    std::string ToString(StringFormat format = DEC) const{    
+    std::string ToString(unsigned int base = 10) const{    
+        if(base < 2 || base > 16){
+            throw std::invalid_argument("Base must be between 2 and 16");
+        }
         if(!(*this)){
             return "0";
         }
@@ -317,36 +321,52 @@ struct uint128_t {
             static_cast<uint32_t>(u128_impl::low(v_) >> 32),
             static_cast<uint32_t>(u128_impl::low(v_) & 0xFFFF'FFFF)
         };
-        return DigitsToString(digits, false, format);
+        return digits_to_string(digits, false, base);
     }
-    friend std::ostream& operator<<(std::ostream& os, const uint128_t& num){
-        if(!os)
-            return os;
-        if(!num)
-            return os << "0";       
-        StringFormat format = DEC;
-        switch(os.flags() & std::ios_base::basefield){
-            case std::ios_base::hex:
-                format = HEX;
-                break;
-            case std::ios_base::oct:
-                format = OCT;
-                break;
-            case std::ios_base::dec:
-                format = DEC;
-                break;            
-            default:
-                break;
+    template<class CharT, class Traits>
+    friend std::basic_ostream<CharT, Traits>& operator<<(
+        std::basic_ostream<CharT, Traits>& os, const uint128_t& num) {
+        int base = utils::stream::stream_base(os.flags());
+        if(base == 0) base = 10;
+        std::array<uint32_t, 4> words{
+            static_cast<uint32_t>(u128_impl::high(num.v_) >> 32U),
+            static_cast<uint32_t>(u128_impl::high(num.v_)),
+            static_cast<uint32_t>(u128_impl::low(num.v_) >> 32U),
+            static_cast<uint32_t>(u128_impl::low(num.v_))
+        };
+        std::string prefix;
+        if(num && (os.flags() & std::ios_base::showbase) != 0) {
+            if(base == 16) {
+                prefix = (os.flags() & std::ios_base::uppercase) != 0 ? "0X" : "0x";
+            }
+            else if(base == 8) {
+                prefix = "0";
+            }
         }
-        os << num.ToString(format);
-        return os;
+        return utils::stream::write_integer(
+            os, digits_to_string(words, false, static_cast<unsigned int>(base)),
+            {}, std::move(prefix));
     }
-    friend std::istream& operator>>(std::istream& is, uint128_t& num){
-        if(!is)
-            return is;
-        std::string str;
-        is >> str;
-        assert(false && "Input operator for uint128_t is not implemented yet.");
+
+    template<class CharT, class Traits>
+    friend std::basic_istream<CharT, Traits>& operator>>(
+        std::basic_istream<CharT, Traits>& is, uint128_t& num) {
+        auto parsed = utils::stream::read_integer<CharT, Traits, 4>(is);
+        if(!parsed.sentry_ok) return is;
+
+        uint128_t value(0U);
+        if(parsed.overflow) {
+            value = max();
+        }
+        else if(parsed.any_digit) {
+            for(uint32_t word : parsed.words) {
+                value = (value << 32U) + word;
+            }
+            if(parsed.negative) value = -value;
+        }
+        num = value;
+        if(parsed.state != std::ios_base::goodbit) is.setstate(parsed.state);
+        return is;
     }
     static inline constexpr uint128_t max(){
         return uint128_t(u128_impl::max());

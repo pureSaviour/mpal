@@ -5,14 +5,8 @@
 #include <array>
 #include <bit>
 #include <cstdint>
-#include <ostream>
 #include <stdexcept>
 #include <string>
-
-// int128_t 只有 ToString()，没有 operator<<，为 gtest 的打印补一个。
-std::ostream& operator<<(std::ostream& os, const int128_t& v) {
-    return os << v.ToString();
-}
 
 TEST(Int128Test, ConstructAndToString) {
     EXPECT_EQ(int128_t(0).ToString(), std::string("0"));

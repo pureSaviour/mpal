@@ -9,7 +9,7 @@
 #include <format>
 #include "integral_128.h"
 #include "utils.h"
-
+#include "utils_stream.h"
 namespace i128_impl{
     #if MPAL_HAS_NATIVE_I128
         using rep = __int128_t;        
@@ -233,7 +233,7 @@ struct int128_t{
         bool isNegative = false;
         std::vector<uint32_t> digits;
         try{
-            digits = StringToDigits(str, &isNegative);            
+            digits = string_to_digits(str, &isNegative);            
         }catch(const std::invalid_argument& e){
             throw std::invalid_argument("Invalid string for int128_t: " + str);
         }
@@ -379,57 +379,120 @@ struct int128_t{
     inline constexpr explicit operator uint32_t() const noexcept{
         return static_cast<uint32_t>(i128_impl::low(v_));
     }    
-    std::string ToString() const{
-        using u64_t = uint64_t;
-        using u32_t = uint32_t;
-        using i64_t = int64_t;
+    std::string ToString(unsigned int base = 10) const{        
+        if(base < 2 || base > 16){
+            throw std::invalid_argument("Base must be between 2 and 16");
+        }
+        if(*this == min()){            
+            static const std::string minStrs[] = {                
+                "-10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                "-101100201022001010121000102002120122110122221010202000122201220121120010200022002",
+                "-2000000000000000000000000000000000000000000000000000000000000000",
+                "-3013030220323124042102424341431241221233040112312340403",
+                "-11324454543055553250455021551551121442554522203132",
+                "-1406241064412313155000336513424310163013142502",
+                "-2000000000000000000000000000000000000000000",
+                "-11321261117012076573587122018656546120262",
+                "-170141183460469231731687303715884105728",
+                "-555A8020989A11327710815513A946A188727",
+                "-2A695925806818735399A37A20A31B3534A8",
+                "-2373464C8A3CB25BA2B7C6382B2963BB71B",
+                "-27C22D5B9734A1517BB1DC612904A79D72",
+                "-3E2480B3404D8BB9BCA3084369BA3E188",
+                "-80000000000000000000000000000000"
+            };
+            return minStrs[base - 2];
+        };            
+        bool isNegative = i128_impl::lt(v_, i128_impl::make(0));
+        i128_impl::rep absValue = isNegative ? i128_impl::sub(i128_impl::make(0), v_) : v_;
         
-        constexpr u32_t base = 1E9;
-        std::string str;
-        u64_t low = i128_impl::low(v_);
-        i64_t high = i128_impl::high(v_);
-        int128_t absValue;
-        if(*this == min())
-            return "-170141183460469231731687303715884105728";
-        if(high < 0){
-            str += "-";
-            absValue = -(*this);            
-        }else{
-            absValue = *this;
-        }
-        u32_t parts[4];
-        u32_t resDigitsi[5] = {0};
-        size_t resDigitsCount = 0;
-        parts[0] = static_cast<u32_t>(i128_impl::high(absValue.v_) >> 32);
-        parts[1] = static_cast<u32_t>(i128_impl::high(absValue.v_) & 0xFFFF'FFFFULL);
-        parts[2] = static_cast<u32_t>(i128_impl::low(absValue.v_) >> 32);
-        parts[3] = static_cast<u32_t>(i128_impl::low(absValue.v_) & 0xFFFF'FFFFULL);
-        while(true){
-            uint64_t remainder = 0;
-            bool allZero = true;
-            for(size_t i = 0; i < 4; ++i){
-                u64_t curVal = (static_cast<u64_t>(remainder) << 32) + parts[i];
-                u32_t quotient = static_cast<u32_t>(curVal / base);
-                remainder = static_cast<u32_t>(curVal % base);
-                parts[i] = quotient;
-                if(quotient != 0){
-                    allZero = false;
-                } 
+        std::array<uint32_t, 4> words = {
+            static_cast<uint32_t>(std::bit_cast<uint64_t>(i128_impl::high(absValue)) >> 32U),
+            static_cast<uint32_t>(std::bit_cast<uint64_t>(i128_impl::high(absValue))),
+            static_cast<uint32_t>(i128_impl::low(absValue) >> 32U),
+            static_cast<uint32_t>(i128_impl::low(absValue))
+        };
+        return digits_to_string(words, isNegative, base);
+    }
+
+    template<class CharT, class Traits>
+    friend std::basic_ostream<CharT, Traits>& operator<<(
+        std::basic_ostream<CharT, Traits>& os, const int128_t& num) {
+        int base = utils::stream::stream_base(os.flags());
+        if(base == 0) base = 10;
+
+        uint64_t high = std::bit_cast<uint64_t>(i128_impl::high(num.v_));
+        uint64_t low = i128_impl::low(num.v_);
+        const bool negative = i128_impl::lt(num.v_, i128_impl::make(0));
+        std::string sign;
+        if(base == 10) {
+            if(negative) {
+                sign = "-";
+                low = ~low + 1U;
+                high = ~high + static_cast<uint64_t>(low == 0);
             }
-            resDigitsi[resDigitsCount++] = static_cast<u32_t>(remainder);
-            if(allZero){
-                break;
+            else if((os.flags() & std::ios_base::showpos) != 0) {
+                sign = "+";
             }
         }
-        str += std::to_string(resDigitsi[resDigitsCount - 1]);
-        for(std::ptrdiff_t i = static_cast<std::ptrdiff_t>(resDigitsCount) - 2; i >= 0; --i){
-            str += std::format("{:09}", resDigitsi[i]);
+        
+        std::array<uint32_t, 4> words{
+            static_cast<uint32_t>(high >> 32U), static_cast<uint32_t>(high),
+            static_cast<uint32_t>(low >> 32U), static_cast<uint32_t>(low)
+        };
+         
+        const bool zero = std::ranges::all_of(words, [](uint32_t word) { return word == 0; });
+        std::string prefix;
+        if(!zero && (os.flags() & std::ios_base::showbase) != 0) {
+            if(base == 16) {
+                prefix = (os.flags() & std::ios_base::uppercase) != 0 ? "0X" : "0x";
+            }
+            else if(base == 8) {
+                prefix = "0";
+            }
         }
-        return str;
+        return utils::stream::write_integer(
+            os, digits_to_string(words, false, static_cast<unsigned int>(base)),
+            std::move(sign), std::move(prefix));
+    }
+
+    template<class CharT, class Traits>
+    friend std::basic_istream<CharT, Traits>& operator>>(
+        std::basic_istream<CharT, Traits>& is, int128_t& num) {
+        auto parsed = utils::stream::read_integer<CharT, Traits, 4>(is);
+        if(!parsed.sentry_ok) return is;
+
+        constexpr std::array<uint32_t, 4> positive_limit{
+            0x7FFF'FFFFU, 0xFFFF'FFFFU, 0xFFFF'FFFFU, 0xFFFF'FFFFU};
+        constexpr std::array<uint32_t, 4> negative_limit{
+            0x8000'0000U, 0, 0, 0};
+        const auto& limit = parsed.negative ? negative_limit : positive_limit;
+        const bool out_of_range = parsed.overflow
+            || utils::stream::compare_words(parsed.words, limit) == std::strong_ordering::greater;
+
+        int128_t value(0);
+        if(out_of_range) {
+            value = parsed.negative ? min() : max();
+            parsed.state |= std::ios_base::failbit;
+        }
+        else if(parsed.any_digit) {
+            if(parsed.negative && parsed.words == negative_limit) {
+                value = min();
+            }
+            else {
+                for(uint32_t word : parsed.words) {
+                    value = (value << 32U) + word;
+                }
+                if(parsed.negative) value = -value;
+            }
+        }
+        num = value;
+        if(parsed.state != std::ios_base::goodbit) is.setstate(parsed.state);
+        return is;
     }
 
     static inline constexpr int128_t max() noexcept {return int128_t(i128_impl::max());}
-    static inline constexpr int128_t min() noexcept {return int128_t(i128_impl::min());}
+    static inline constexpr int128_t min() noexcept {return int128_t(i128_impl::min());}    
 };
 
 #endif

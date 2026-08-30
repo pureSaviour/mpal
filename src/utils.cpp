@@ -30,7 +30,7 @@ static uint32_t checkc(const StringFormat format, char c){
     }
 }
 
-std::vector<uint32_t> StringToDigits(const std::string& str, bool* isNegative) {
+std::vector<uint32_t> string_to_digits(const std::string& str, bool* isNegative) {
     ThrowIfStrEmpty(str);
     size_t startIndex = 0;
     bool isNeg = false; 
@@ -164,61 +164,28 @@ std::vector<uint32_t> StringToDigits(const std::string& str, bool* isNegative) {
     return result;
 }
 
-std::string DigitsToString(const std::span<const uint32_t> &digits, bool isNegative, StringFormat format)
+std::string digits_to_string(const std::span<uint32_t> &digits, bool isNegative, const uint32_t base)
 {
     if(digits.empty()){
         throw std::invalid_argument("Digits vector is empty");
     }
-
-    std::stringstream ss;
-    // std::string str;
-    if(isNegative){
-        ss << "-";
+    if(base > 16 || base < 2){
+        throw std::invalid_argument("Base must be between 2 and 16");
     }
-    if(format == BIN){        
-        for(size_t i = 0; i < digits.size(); ++i){
-            ss << std::bitset<32>(digits[i]).to_string();
-        }        
-        return ss.str();
-    }
-
-    constexpr uint64_t BASE = 0x1'00'00'00'00U; // 2^32    
-    uint32_t targetBase = 1E9;
-    size_t blockSize = 2;
-    auto flag = std::dec;
-    switch(format){
-        case HEX:
-            targetBase = 268435456; // 16^7            
-            flag = std::hex;
-            break;
-        case OCT:
-            targetBase = 1073741824; // 8^10            
-            flag = std::oct;
-            break;
-        default:
-            break;
-    }
-    std::vector<uint64_t> tempDigits(digits.begin(), digits.end());
-    std::vector<uint32_t> resDigits;
-    while(true){
-        uint32_t carry = 0;
-        bool allZero = true;
-        for(size_t i = 0; i < tempDigits.size(); ++i){
-            uint64_t val = static_cast<uint64_t>(tempDigits[i]) + (static_cast<uint64_t>(carry) * BASE);
-            uint64_t newDigit = static_cast<uint64_t>(val / targetBase);
-            carry = static_cast<uint32_t>(val % targetBase);    
-            tempDigits[i] = newDigit;        
-            if(newDigit != 0)
-                allZero = false;
-        }
-        resDigits.emplace_back(carry);
-        if(allZero)
-            break;
-    }
+    constexpr char alphabet[] = "0123456789abcdef";
+    std::string str;    
     
-    ss << flag << resDigits[resDigits.size() - 1];    
-    for(ptrdiff_t i = static_cast<ptrdiff_t>(resDigits.size()) - 2; i >= 0; --i){
-        ss <<  resDigits[i];
-    }
-    return ss.str();
+    do{
+        uint32_t carry = 0;
+        for(uint32_t& digit : digits){
+            uint64_t val = static_cast<uint64_t>(digit) | (static_cast<uint64_t>(carry) << 32U);
+            digit = static_cast<uint32_t>(val / base);
+            carry = static_cast<uint32_t>(val % base);
+        }
+        str.push_back(alphabet[carry]);
+    }while(std::ranges::any_of(digits, [](uint32_t digit){ return digit != 0; }));
+    if(isNegative)
+        str.push_back('-');
+    std::ranges::reverse(str);    
+    return str;
 }
