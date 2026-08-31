@@ -323,12 +323,31 @@ namespace utils{
             return result;
         }
 
+        /// @brief 将整数（以字符串形式表示）格式化并写入输出流，支持分组、填充和对齐。
+        /// 
+        /// 该函数接收一个已转换为字符串的数字（`digits`）、符号（`sign`）和前缀（`prefix`），
+        /// 根据流的状态（宽度、填充字符、对齐方式、分组规则、大小写等）构造最终输出，
+        /// 并通过 `stream.write` 写入。
+        /// 
+        /// @tparam CharT  字符类型（如 char、wchar_t）
+        /// @tparam Traits 字符特性类型，用于流操作
+        /// @param stream  目标输出流（引用）
+        /// @param digits  数字部分的字符串（仅包含数字字符，不含符号或前缀）
+        /// @param sign    符号字符串（如 "+" 或 "-"），可以为空
+        /// @param prefix  前缀字符串（如 "0x" 或 "0X"），可以为空
+        /// @return 返回传入的 `stream` 引用，以支持链式操作
+        /// 
+        /// @note 函数内部会应用流的 `width` 设置，但会在读取后将其重置为 0（标准行为）。
+        /// @note 若流设置了 `std::ios_base::uppercase` 标志，则 `digits` 中的字母（如十六进制 a-f）
+        ///       会被转换为大写。
+        /// @note 分组依据流 locale 中的 `numpunct`  facet 的 `grouping()` 和 `thousands_sep()`。
+        /// @note 对齐方式支持 `left`、`internal` 和 `right`（默认）。
         template<class CharT, class Traits>
         std::basic_ostream<CharT, Traits>& write_integer(
             std::basic_ostream<CharT, Traits>& stream,
             std::string digits,
-            std::string sign,
-            std::string prefix) {
+            const std::string& sign,
+            const std::string& prefix) {
             
             typename std::basic_ostream<CharT, Traits>::sentry sentry(stream);
             if(!sentry) return stream;

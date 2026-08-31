@@ -16,8 +16,7 @@
 
 using namespace mpal;
 int main(){    
-    uint128_t a;
-    std::cin >> std::setbase(0) >> a;
-    std::cout << "Input: " << a << std::endl;
-    int b;    
+    BigInt a;
+    std::cin >> a;
+    std::cout << a << std::endl;      
 }

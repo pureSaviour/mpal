@@ -42,10 +42,11 @@ mpal::BigInt::BigInt(BigInt &&other) noexcept
     other.isNegative_ = false;
 }
 
-std::string mpal::BigInt::ToString(StringFormat format) const
+std::string mpal::BigInt::ToString(unsigned int base) const
 {
     std::vector<u32_t> digitsCopy = digits_;
-    return digits_to_string(digitsCopy, isNegative_, format);
+    std::ranges::reverse(digitsCopy);
+    return digits_to_string(digitsCopy, isNegative_, base);
 }
 
 bool mpal::BigInt::operator==(const BigInt &other) const
@@ -105,13 +106,13 @@ mpal::BigInt &mpal::BigInt::operator=(BigInt &&other) noexcept
     return *this;
 }
 
-std::partial_ordering mpal::BigInt::operator<=>(const BigInt &other) const
+std::strong_ordering mpal::BigInt::operator<=>(const BigInt &other) const
 {
     if(*this == other)
-        return std::partial_ordering::equivalent;
+        return std::strong_ordering::equal;
     if(*this < other)
-        return std::partial_ordering::less;
-    return std::partial_ordering::greater;
+        return std::strong_ordering::less;
+    return std::strong_ordering::greater;
 }
 
 mpal::BigInt mpal::BigInt::operator-() const

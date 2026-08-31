@@ -452,7 +452,7 @@ struct int128_t{
             }
         }
         return utils::stream::write_integer(
-            os, digits_to_string(words, false, static_cast<unsigned int>(base)),
+            os, std::move(digits_to_string(words, false, static_cast<unsigned int>(base))),
             std::move(sign), std::move(prefix));
     }
 
