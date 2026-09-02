@@ -9,7 +9,8 @@ MPAL（Multi-Precision Arithmetic Library）是一个使用 C++23 开发的高�
 - 公共 128 位除法内核：包含 128÷64、规范化 128÷128、二的幂快速路径和编译期回退。
 - 通用任意精度流式输入输出工具：提供可变长度和固定长度 limb 解析，以及与具体整数类型解耦的格式化输出能力。
 - 符合 C++ 格式化整数规则的 `uint128_t`、`int128_t` 流式输入输出。
-- `BigInt`：任意精度整数的基础实现，仍在持续完善。
+- `BigInt`：任意精度有符号整数，支持比较、加减、自适应朴素/Karatsuba 乘法、除法和取模。
+- `BigInt` 除法分派：2 的幂位移路径、单 limb 除法、中等规模 Knuth Algorithm D，以及大规模 Burnikel–Ziegler 递归除法。
 - GoogleTest 边界与随机差分测试。
 - Google Benchmark 微基准测试。
 

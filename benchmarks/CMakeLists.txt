@@ -1,6 +1,7 @@
 add_executable(mpal_benchmarks
     benchmark_int128.cpp
     benchmark_uint128.cpp
+    benchmark_bigint.cpp
 )
 
 target_compile_features(mpal_benchmarks PRIVATE cxx_std_23)

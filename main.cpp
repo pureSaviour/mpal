@@ -16,7 +16,15 @@
 
 using namespace mpal;
 int main(){    
-    BigInt a;
-    std::cin >> a;
-    std::cout << a << std::endl;      
+    // BigInt a;
+    // std::cin >> a;
+    // BigInt b;
+    // std::cin >> b;
+    // std::cout << a << std::endl;
+    // std::cout << b << std::endl;
+    // std::cout << a + b << std::endl;
+    std::vector<uint32_t> digits = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};    
+    for(auto d : digits){
+        std::cout << std::hex << d << std::endl;
+    }    
 }

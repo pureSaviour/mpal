@@ -6,7 +6,7 @@
 #include <bitset>
 #include <iomanip>
 #include <sstream>
-
+#include <bit>
 void ThrowIfStrEmpty(const std::string& str){
     if(str.empty()){
         throw std::invalid_argument("String is empty");
@@ -55,6 +55,9 @@ std::vector<uint32_t> string_to_digits(const std::string& str, bool* isNegative)
     }else{
         isNeg = false;
     }
+    if(startIndex == str.size()){
+        throw std::invalid_argument("String is not a valid integer");
+    }
     if(isNegative != nullptr)
         *isNegative = isNeg;
     
@@ -85,10 +88,14 @@ std::vector<uint32_t> string_to_digits(const std::string& str, bool* isNegative)
                         throw std::invalid_argument(str + "  has invalid character" + " at index " + std::to_string(startIndex + 1));
                     }
             }            
+            if(startIndex == str.size()){
+                throw std::invalid_argument("String is not a valid integer");
+            }
         }
         else
         {
-            *isNegative = false;
+            if(isNegative != nullptr)
+                *isNegative = false;
             return {0};
         }
     }        
@@ -100,6 +107,8 @@ std::vector<uint32_t> string_to_digits(const std::string& str, bool* isNegative)
         }
     }
     if(startIndex == str.size()){
+        if(isNegative != nullptr)
+            *isNegative = false;
         return {0};
     }
     size_t ss = str.size() - startIndex;    // 纯数字串的长度
